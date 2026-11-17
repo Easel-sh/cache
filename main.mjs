@@ -1,7 +1,7 @@
 // easel-sh/cache: ask Easel for this repository's volume for `key`, mounted
 // into this runner, then bind-mount each path from it, so the job finds
 // what the repository's last kept job left there.
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import { isKey, isWithin, mayKeep, planMounts } from "./mounts.mjs";
@@ -50,6 +50,12 @@ try {
   const volume = `/easel/cache/${key}`;
   const plan = planMounts(process.env.INPUT_PATH ?? "", volume, { home, workspace });
   await mountVolume(key);
+  // Easel says it's mounted; the runner's own mount table has the last word.
+  if (spawnSync("mountpoint", ["-q", volume]).status !== 0) {
+    console.log(`::warning::Easel answered, but nothing is mounted at ${volume}: no cache volume this time. The paths are left as they are.`);
+    process.exit(0);
+  }
+  fs.appendFileSync(process.env.GITHUB_STATE, `volume=${volume}\n`);
   let event = null;
   try {
     event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
