@@ -71,15 +71,16 @@ try {
       }
     }
     const fresh = !fs.existsSync(source) || isEmptyDir(source);
-    if (fresh) {
-      // First use: what the path holds now (the image's files, apt's
-      // `partial/`) moves onto the volume with its owners, so nothing
-      // disappears under the mount.
-      sudo("mkdir", "-p", source);
-      sudo("chown", "--reference", target, source);
-      sudo("chmod", "--reference", target, source);
-      if (!isEmptyDir(target)) sudo("cp", "-a", `${target}/.`, `${source}/`);
-    }
+    if (fresh) sudo("mkdir", "-p", source);
+    // The mounted directory takes the path's owner and mode, every time: a
+    // volume's directory may have been made root's as the parent of another
+    // path (`~/.cargo` for `~/.cargo/registry`).
+    sudo("chown", "--reference", target, source);
+    sudo("chmod", "--reference", target, source);
+    // First use: what the path holds now (the image's files, apt's
+    // `partial/`) moves onto the volume with its owners, so nothing
+    // disappears under the mount.
+    if (fresh && !isEmptyDir(target)) sudo("cp", "-a", `${target}/.`, `${source}/`);
     sudo("mount", "--bind", source, target);
     mounted.push(target);
     // After each mount, so the post step unmounts what got mounted even if a later path fails.
