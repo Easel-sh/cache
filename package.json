@@ -1,0 +1,13 @@
+{
+  "name": "@easel-sh/cache-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "easel-sh/cache: persistent cache volumes for GitHub Actions jobs on Easel runners",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.9"
+  }
+}
