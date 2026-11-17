@@ -9,6 +9,22 @@ export const VOLUME_ROOT = "/easel/cache";
 /** A key: letters, digits, '.', '_' and '-', starting with a letter or digit, at most 64. */
 export const isKey = (key) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(key);
 
+/** The events whose runs' writes Easel may keep (`packages/runners/src/volumes.ts`, `VOLUME_WRITE_EVENTS`). */
+export const KEPT_EVENTS = ["push", "schedule", "workflow_dispatch"];
+
+/**
+ * Whether Easel may keep this run's writes as the volume: a push, schedule
+ * or manual run on the repository's default branch (`event`: the run's
+ * webhook payload, `GITHUB_EVENT_PATH`). Easel decides after the job; this
+ * only spares the others the wait for an upload that would be thrown away.
+ * Unsure (no default branch in the payload): yes.
+ */
+export function mayKeep(eventName, ref, event) {
+  if (!KEPT_EVENTS.includes(eventName)) return false;
+  const branch = event?.repository?.default_branch;
+  return !branch || ref === `refs/heads/${branch}`;
+}
+
 /** Whether `p` is `dir` or inside it. */
 export function isWithin(p, dir) {
   const d = dir.replace(/\/+$/, "");

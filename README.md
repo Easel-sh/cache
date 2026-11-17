@@ -29,6 +29,6 @@ jobs:
 
 - The step asks Easel for the repository's volume for `key`; Easel mounts it into the runner at `/easel/cache/{key}`, and the step bind-mounts each `path` from it. The first time, what a path already holds moves onto the volume.
 - Each job works on its own copy of the volume. After the job, Easel keeps that copy as the volume only if the job was a successful push, schedule or manual run on the repository's default branch, from the repository itself. Pull requests, forks included, read the volume but never change it.
-- The post step unmounts the paths and flushes the volume, so the job's writes are saved before the runner stops.
+- The post step unmounts the paths. On a run whose writes may be kept (a push, schedule or manual run on the default branch), it also flushes the volume, so they're saved before the runner stops; other runs don't wait for an upload that would be thrown away.
 - A volume holds up to 50 GiB. A volume no job used for 7 days is deleted.
 - On a runner that isn't Easel's, the step prints a warning and changes nothing, so a workflow still runs elsewhere.

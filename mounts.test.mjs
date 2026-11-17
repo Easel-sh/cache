@@ -1,8 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { isKey, isWithin, planMounts } from "./mounts.mjs";
+import { isKey, isWithin, mayKeep, planMounts } from "./mounts.mjs";
 
 const env = { home: "/home/runner", workspace: "/home/runner/work/app/app" };
 const vol = "/easel/cache/rust";
+
+describe("mayKeep", () => {
+  const event = { repository: { default_branch: "main" } };
+  it("is a push, schedule or manual run on the default branch", () => {
+    expect(mayKeep("push", "refs/heads/main", event)).toBe(true);
+    expect(mayKeep("schedule", "refs/heads/main", event)).toBe(true);
+    expect(mayKeep("workflow_dispatch", "refs/heads/main", event)).toBe(true);
+    expect(mayKeep("push", "refs/heads/feature", event)).toBe(false);
+    expect(mayKeep("push", "refs/tags/v1", event)).toBe(false);
+    expect(mayKeep("pull_request", "refs/pull/1/merge", event)).toBe(false);
+    expect(mayKeep("pull_request_target", "refs/heads/main", event)).toBe(false);
+  });
+  it("flushes when unsure", () => {
+    expect(mayKeep("push", "refs/heads/main", null)).toBe(true);
+  });
+});
 
 describe("planMounts", () => {
   it("resolves paths as a step's shell would and places them on the key's volume", () => {

@@ -1,7 +1,8 @@
-// easel-sh/cache, after the job: unmount the paths (children first) and
-// flush the volume, so its writes are in the object store before the
-// runner's sandbox stops (a VM that won't flush in time is stopped anyway).
-// The job waits for that upload.
+// easel-sh/cache, after the job: unmount the paths (children first) and,
+// when the run's writes may be kept, flush the volume, so they're in the
+// object store before the runner's sandbox stops (a VM that won't flush in
+// time is stopped anyway). The job waits for that upload; runs whose writes
+// are thrown away (pull requests, other branches) don't.
 import { execFileSync } from "node:child_process";
 
 const targets = JSON.parse(process.env.STATE_targets || "[]");
@@ -16,6 +17,10 @@ for (const target of [...targets].reverse()) {
     } catch {}
   }
 }
-const t = Date.now();
-execFileSync("sync");
-console.log(`cache volume flushed in ${Date.now() - t} ms`);
+if (process.env.STATE_keep === "false") {
+  console.log("cache volume not flushed: this run's writes aren't kept");
+} else {
+  const t = Date.now();
+  execFileSync("sync");
+  console.log(`cache volume flushed in ${Date.now() - t} ms`);
+}

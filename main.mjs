@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
-import { isKey, isWithin, planMounts } from "./mounts.mjs";
+import { isKey, isWithin, mayKeep, planMounts } from "./mounts.mjs";
 
 const sudo = (...args) => execFileSync("sudo", ["-n", ...args], { stdio: ["ignore", "inherit", "inherit"] });
 const isEmptyDir = (dir) => fs.readdirSync(dir).length === 0;
@@ -50,6 +50,13 @@ try {
   const volume = `/easel/cache/${key}`;
   const plan = planMounts(process.env.INPUT_PATH ?? "", volume, { home, workspace });
   await mountVolume(key);
+  let event = null;
+  try {
+    event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+  } catch {}
+  const keep = mayKeep(process.env.GITHUB_EVENT_NAME ?? "", process.env.GITHUB_REF ?? "", event);
+  fs.appendFileSync(process.env.GITHUB_STATE, `keep=${keep}\n`);
+  if (!keep) console.log("This run reads the volume; its writes aren't kept (only default-branch pushes, schedules and manual runs are).");
   const mounted = [];
   for (const { source, target } of plan) {
     const t = Date.now();
